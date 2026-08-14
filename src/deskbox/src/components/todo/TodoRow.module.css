@@ -6,7 +6,8 @@
   border: 1px solid var(--line);
   padding: 11px 14px;
   border-radius: var(--r-md);
-  transition: border-color 0.12s, background 0.12s;
+  min-width: 0;
+  transition: border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .item:hover {
@@ -27,15 +28,17 @@
 }
 
 .cbox {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border: 1.5px solid var(--faint);
   border-radius: 50%;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  background: transparent;
+  color: var(--on-accent);
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 .cbox:hover {
@@ -57,6 +60,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: text;
+  min-width: 0;
 }
 
 .item.done {
@@ -83,8 +87,11 @@
   flex: 0 0 auto;
   font-size: 11px;
   font-weight: 600;
+  min-width: 32px;
+  min-height: 28px;
   padding: 2px 8px;
-  border-radius: 5px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
@@ -110,11 +117,17 @@
 }
 
 .del {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
   color: var(--faint);
-  font-size: 13px;
-  line-height: 1;
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  flex: 0 0 auto;
+  transition: opacity var(--motion-fast), color var(--motion-fast), background var(--motion-fast);
   cursor: pointer;
 }
 
@@ -122,6 +135,22 @@
   opacity: 1;
 }
 
+.del:focus-visible {
+  opacity: 1;
+}
+
 .del:hover {
   color: var(--danger);
+  background: rgba(255, 107, 107, 0.12);
+}
+
+@media (max-width: 620px) {
+  .item {
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .time {
+    display: none;
+  }
 }

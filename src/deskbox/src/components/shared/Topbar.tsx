@@ -41,9 +41,15 @@ export function Topbar() {
         <div className={styles.logo}>DB</div>
         <span className={styles.name}>DeskBox</span>
       </div>
-      <nav className={styles.tabs}>
+      <nav className={styles.tabs} aria-label="主功能">
         {TABS.map(([key, label]) => (
-          <button key={key} className={`${styles.tab}${tab === key ? " " + styles.active : ""}`} onClick={() => setTab(key)}>
+          <button
+            key={key}
+            type="button"
+            className={`${styles.tab}${tab === key ? " " + styles.active : ""}`}
+            aria-current={tab === key ? "page" : undefined}
+            onClick={() => setTab(key)}
+          >
             {ICONS[key]}
             {label}
           </button>
@@ -57,6 +63,7 @@ export function Topbar() {
           </svg>
           <input
             className={styles.search}
+            aria-label="搜索当前功能内容"
             placeholder="搜索笔记、待办、密码…"
             spellCheck={false}
             value={query}

@@ -60,6 +60,7 @@ export function CreateMasterDialog() {
       </div>
       <input
         className={styles.input}
+        aria-label="主密码"
         type="password"
         autoFocus
         placeholder="主密码（至少 8 位）"
@@ -68,18 +69,19 @@ export function CreateMasterDialog() {
       />
       <input
         className={styles.input}
+        aria-label="确认主密码"
         type="password"
         placeholder="再次输入"
         value={pw2}
         onChange={(e) => setPw2(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
       />
-      <div className={styles.err}>{err}</div>
+      <div className={styles.err} role="alert">{err}</div>
       <div className={styles.row}>
-        <button className={styles.ghost} onClick={closeModal}>
+        <button type="button" className={styles.ghost} onClick={closeModal}>
           取消
         </button>
-        <button className={styles.primary} onClick={submit} disabled={busy}>
+        <button type="button" className={styles.primary} onClick={submit} disabled={busy}>
           {busy ? "创建中…" : "创建"}
         </button>
       </div>

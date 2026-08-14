@@ -15,10 +15,11 @@ export function ConfirmDialog({ title, desc, confirmText = "确定", onConfirm }
       <h3 className={styles.title}>{title}</h3>
       <div className={styles.desc}>{desc}</div>
       <div className={styles.row}>
-        <button className={styles.ghost} onClick={closeModal}>
+        <button type="button" className={styles.ghost} onClick={closeModal}>
           取消
         </button>
         <button
+          type="button"
           className={`${styles.primary} ${styles.danger}`}
           onClick={() => {
             closeModal();

@@ -5,7 +5,7 @@ import styles from "./Toast.module.css";
 export function Toast() {
   const toasts = useToastStore((s) => s.toasts);
   return (
-    <div className={styles.layer}>
+    <div className={styles.layer} role="status" aria-live="polite" aria-atomic="true">
       {toasts.map((t) => (
         <div key={t.id} className={styles.toast}>
           {t.msg}

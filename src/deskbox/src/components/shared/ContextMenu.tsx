@@ -27,12 +27,15 @@ export function ContextMenu() {
   return (
     <div
       className={styles.menu}
+      role="menu"
       style={{ left: menu.x, top: menu.y }}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {menu.items.map((it, i) => (
         <button
           key={i}
+          type="button"
+          role="menuitem"
           className={`${styles.item}${it.danger ? " " + styles.danger : ""}`}
           onClick={() => {
             close();

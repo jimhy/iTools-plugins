@@ -1,5 +1,5 @@
 /**
- * 侧栏笔记卡片：左侧强调条（选中态）+ 标题 + 摘要预览 + 时间 + 彩色圆点 / 锁 / 星标。
+ * 侧栏笔记卡片：左侧强调条（选中态）+ 标题 + 时间 + 彩色圆点 / 锁 / 星标。
  * 点击打开、右键菜单（收藏 / 删除）、可拖拽到其它笔记后重排或拖入文件夹。
  */
 import type { DragEvent, MouseEvent } from "react";
@@ -26,7 +26,6 @@ export function NoteCard({ node, dragId, drop, setDrop }: Props) {
   const toggleStar = useNotesStore((s) => s.toggleStar);
 
   const dropCls = drop?.id === node.id && drop.kind === "after" ? styles.dropAfter : "";
-  const preview = node.locked ? "🔒 已加密内容" : node.excerpt || "";
 
   const confirmAndDelete = async () => {
     const ok = await confirmDialog("删除笔记", "删除后无法恢复，确定吗？");
@@ -46,7 +45,17 @@ export function NoteCard({ node, dragId, drop, setDrop }: Props) {
     <div
       className={`${styles.card} ${active ? styles.cardActive : ""} ${dropCls}`}
       draggable
+      role="button"
+      tabIndex={0}
+      aria-current={active ? "page" : undefined}
+      aria-label={`打开笔记：${node.title || "未命名笔记"}`}
       onClick={() => void openNote(node.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          void openNote(node.id);
+        }
+      }}
       onContextMenu={onMenu}
       onDragStart={(e: DragEvent) => {
         dragId.current = node.id;
@@ -79,22 +88,21 @@ export function NoteCard({ node, dragId, drop, setDrop }: Props) {
       <span className={styles.accentBar} style={active ? { background: colorFromId(node.id) } : undefined} />
       <div className={styles.cardBody}>
         <div className={styles.cardTitle}>{node.title || "未命名笔记"}</div>
-        {preview && <div className={styles.cardPreview}>{preview}</div>}
         <div className={styles.cardMeta}>
-          <span className={styles.cardTs}>{fmtShort(node.updatedAt)}</span>
-          <span className={styles.cardMetaRight}>
-            {node.starred && (
-              <span className={styles.cardStar}>
-                <IconStar size={11} filled />
-              </span>
-            )}
-            <span className={styles.cardDot} style={{ background: colorFromId(node.id) }} />
-            {node.locked && (
-              <span className={styles.cardLock}>
-                <IconLock size={11} />
-              </span>
-            )}
-          </span>
+          <time className={styles.cardTs} dateTime={new Date(node.updatedAt).toISOString()}>
+            {fmtShort(node.updatedAt)}
+          </time>
+          {node.starred && (
+            <span className={styles.cardStar} title="已收藏" aria-label="已收藏">
+              <IconStar size={11} filled />
+            </span>
+          )}
+          <span className={styles.cardDot} style={{ background: colorFromId(node.id) }} aria-hidden="true" />
+          {node.locked && (
+            <span className={styles.cardLock} title="已加密" aria-label="已加密">
+              <IconLock size={11} />
+            </span>
+          )}
         </div>
       </div>
     </div>

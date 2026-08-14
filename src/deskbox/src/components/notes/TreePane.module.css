@@ -10,6 +10,9 @@
   gap: 14px;
   padding: 16px 14px;
   min-height: 0;
+  min-width: 180px;
+  max-width: min(480px, 46vw);
+  overflow: hidden;
 }
 
 /* 右缘拖动手柄：6px 命中区，悬浮/拖动时右缘显青色高亮线 */
@@ -33,44 +36,50 @@
   transition: background 0.12s;
 }
 .resizer:hover::before,
-.resizer:active::before {
+.resizer:active::before,
+.resizer:focus-visible::before {
   background: var(--accent);
+}
+
+.resizer:focus-visible {
+  outline: none;
 }
 
 /* ---- 新建区 ---- */
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.actions button {
+.createBtn {
   flex: 1;
-  border: 0;
-  padding: 9px 4px;
-  font-size: 13px;
-  border-radius: var(--r-md);
-  transition: box-shadow 0.12s, color 0.12s, border-color 0.12s;
-}
-
-.newNote {
+  min-width: 0;
+  height: var(--control-h);
+  border: 1px solid transparent;
   background: var(--grad-v);
   color: var(--on-accent);
+  padding: 0 8px;
+  font-size: 13px;
   font-weight: 600;
+  border-radius: var(--r-md);
   box-shadow: var(--glow);
-}
-.newNote:hover {
-  box-shadow: 0 3px 20px #38e1c966;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background var(--motion-fast), box-shadow var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast);
 }
 
-.newFolder {
-  background: transparent;
-  border: 1px solid var(--line-glow);
-  color: var(--sub);
-  font-weight: 500;
+.createBtn svg {
+  flex: 0 0 auto;
 }
-.newFolder:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+
+.createBtn:hover {
+  box-shadow: 0 3px 20px #38e1c966;
+}
+.createBtn:active {
+  box-shadow: 0 1px 10px #38e1c944;
 }
 
 .divider {
@@ -88,7 +97,7 @@
 .sectionTitle {
   font-size: 11px;
   font-weight: 600;
-  color: var(--faint);
+  color: var(--sub);
   letter-spacing: 1px;
 }
 
@@ -134,12 +143,20 @@
   gap: 6px;
   background: var(--bg);
   border-radius: var(--r-sm);
-  padding: 5px 6px;
+  min-height: 36px;
+  padding: 6px 8px;
   cursor: pointer;
   user-select: none;
 }
 .folderHeader:hover {
   background: var(--hover);
+}
+.folderHeader:active {
+  background: var(--accent-soft);
+}
+.folderHeader:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .folderHl {
@@ -154,7 +171,9 @@
   place-items: center;
   color: var(--faint);
   flex: 0 0 auto;
-  transition: transform 0.12s;
+  width: 18px;
+  height: 18px;
+  transition: transform var(--motion-fast);
 }
 .chevOpen {
   transform: rotate(90deg);
@@ -184,14 +203,15 @@
   border: 1px solid var(--accent);
   color: var(--text);
   border-radius: 4px;
-  padding: 1px 4px;
+  height: 26px;
+  padding: 2px 6px;
   outline: none;
 }
 
 .folderCount {
   flex: 0 0 auto;
   background: var(--panel-2);
-  color: var(--faint);
+  color: var(--sub);
   border-radius: 8px;
   padding: 1px 7px;
   font: 600 10px var(--mono);
@@ -207,6 +227,10 @@
 /* ---- 笔记卡片 ---- */
 .card {
   position: relative;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  font: inherit;
   flex-shrink: 0;
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -214,6 +238,18 @@
   cursor: pointer;
   overflow: hidden;
   transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+@media (max-width: 620px) {
+  .pane {
+    padding-inline: 10px;
+    gap: 12px;
+  }
+
+  .createBtn {
+    padding-inline: 6px;
+    gap: 4px;
+  }
 }
 .card:hover {
   border-color: var(--line-glow);
@@ -223,6 +259,10 @@
   background: var(--hover);
   border-color: var(--accent);
   box-shadow: 0 4px 16px #38e1c930;
+}
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .accentBar {
@@ -236,13 +276,16 @@
 
 .cardBody {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px 10px 12px;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 7px 10px 7px 12px;
   min-width: 0;
 }
 
 .cardTitle {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -251,19 +294,12 @@
   white-space: nowrap;
 }
 
-.cardPreview {
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .cardMeta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .cardTs {
@@ -271,15 +307,9 @@
   color: var(--faint);
 }
 
-.cardMetaRight {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
 .cardDot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex: 0 0 auto;
 }
@@ -301,6 +331,39 @@
   color: inherit;
   padding: 0 1px;
   border-radius: 2px;
+}
+
+/* 搜索结果在紧凑的一行卡片内同时保留笔记名与具体命中上下文。 */
+.searchTitle {
+  flex: 0 1 38%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.searchTitleText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.searchPreview {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.searchCount {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--sub);
+  font: 600 9px var(--mono);
+  white-space: nowrap;
 }
 
 /* ---- 拖放指示 ---- */

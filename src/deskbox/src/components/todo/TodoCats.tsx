@@ -9,19 +9,21 @@ export function TodoCats() {
   const setCat = useTodosStore((s) => s.setCat);
 
   return (
-    <div className={styles.list}>
+    <div className={styles.list} aria-label="待办分类">
       {CAT_DEFS.map((c) => {
         const count = todos.filter((t) => todoInCat(t, c.key)).length;
         return (
-          <div
+          <button
             key={c.key}
+            type="button"
             className={`${styles.item}${cat === c.key ? " " + styles.active : ""}`}
+            aria-pressed={cat === c.key}
             onClick={() => setCat(c.key)}
           >
             <span className={styles.ico} style={{ color: CAT_COLORS[c.key] }}>{c.icon}</span>
             <span className={styles.name}>{c.name}</span>
             <span className={styles.count}>{count}</span>
-          </div>
+          </button>
         );
       })}
     </div>

@@ -6,6 +6,7 @@
   min-width: 0;
   min-height: 0;
   background: var(--bg);
+  container-type: inline-size;
 }
 
 /* ---- 空态 ---- */
@@ -28,25 +29,30 @@
 
 /* ---- 头部 ---- */
 .head {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 22px 28px 18px;
+  padding: 10px 18px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
-.topRow {
+.headMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 34px;
+}
+.headInfo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
 }
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  max-width: 150px;
+  flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
 }
 .crumbIco {
   display: grid;
@@ -57,6 +63,8 @@
 .crumbFolder {
   font-size: 12px;
   color: var(--sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .crumbSep {
@@ -65,21 +73,14 @@
   color: var(--faint);
   flex: 0 0 auto;
 }
-.crumbCur {
-  font-size: 12px;
-  color: var(--faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex: 0 0 auto;
 }
 .actBtn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--line);
   background: var(--panel-2);
   color: var(--sub);
@@ -100,12 +101,19 @@
   color: var(--warn);
   border-color: var(--warn);
 }
+.actBtn:focus-visible,
+.fmtBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .title {
   border: 0;
   background: transparent;
-  font-size: 26px;
+  flex: 1 1 210px;
+  min-width: 120px;
+  font-size: 20px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--text);
   outline: none;
   padding: 0;
@@ -117,8 +125,9 @@
 .metaRow {
   display: flex;
   align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 .metaItem {
   display: flex;
@@ -130,21 +139,86 @@
 .metaItem svg {
   flex: 0 0 auto;
 }
+.lockedMeta {
+  color: var(--accent-2);
+}
 .tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  max-width: 160px;
+  overflow: hidden;
 }
 .tag {
   border: 1px solid var(--line-glow);
   background: var(--bg);
   color: var(--accent);
   border-radius: var(--r-sm);
-  padding: 3px 9px;
+  padding: 2px 7px;
   font: 11px var(--mono);
+  white-space: nowrap;
 }
 .tag:nth-child(even) {
   color: var(--accent-2);
+}
+
+@container (max-width: 1000px) {
+  .tags {
+    display: none;
+  }
+}
+
+@container (max-width: 760px) {
+  .breadcrumb {
+    max-width: 110px;
+  }
+  .title {
+    flex-basis: 150px;
+  }
+  .metaRow {
+    gap: 10px;
+  }
+}
+
+@container (max-width: 620px) {
+  .head {
+    padding: 9px 12px;
+  }
+  .headMain {
+    gap: 8px;
+  }
+  .breadcrumb {
+    display: none;
+  }
+  .metaItem:first-child {
+    display: none;
+  }
+  .actions {
+    gap: 4px;
+  }
+  .actBtn {
+    width: 32px;
+    height: 32px;
+  }
+  .wysiwygTag {
+    display: none;
+  }
+}
+
+@container (max-width: 400px) {
+  .headMain {
+    align-items: start;
+  }
+  .headInfo {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .title {
+    flex-basis: 100%;
+  }
+  .metaRow {
+    flex-basis: 100%;
+  }
 }
 
 /* ---- 格式栏 ---- */
@@ -157,6 +231,12 @@
   padding: 0 16px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.formatBar::-webkit-scrollbar {
+  display: none;
 }
 .fmtGroups {
   display: flex;
@@ -213,8 +293,14 @@
 }
 
 /* ---- 正文（TipTap / ProseMirror）---- */
-.bodyWrap {
+.editorArea {
+  position: relative;
   flex: 1;
+  min-height: 0;
+  background: var(--bg);
+}
+.bodyWrap {
+  height: 100%;
   min-height: 0;
   overflow: auto;
   background: var(--bg);
@@ -395,4 +481,92 @@
   height: 0;
   color: var(--faint);
   pointer-events: none;
+}
+
+/* 搜索定位反馈：装饰层不进入正文 HTML；标题命中同样给出明确但克制的持续反馈。 */
+.searchHit {
+  background: rgba(240, 178, 74, 0.34);
+  box-shadow: 0 0 0 1px rgba(240, 178, 74, 0.5);
+  border-radius: 3px;
+  color: inherit;
+}
+
+.titleSearchHit {
+  background: rgba(240, 178, 74, 0.12);
+  box-shadow: inset 0 -2px 0 var(--warn);
+  border-radius: 3px;
+}
+
+/* 文档内搜索导航：固定在正文右上角，只在当前搜索文档中出现。 */
+.searchNavigator {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line-glow);
+  border-radius: var(--r-md);
+  background: rgba(18, 26, 46, 0.96);
+  box-shadow: 0 8px 28px rgba(2, 8, 20, 0.42);
+}
+
+.searchPosition {
+  min-width: 38px;
+  padding: 0 5px;
+  color: var(--faint);
+  font: 600 10px var(--mono);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.searchNavButton {
+  min-width: 70px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--sub);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.searchNavButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.searchNavButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.searchNavButton:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.searchNavPrev svg {
+  transform: rotate(180deg);
+}
+
+@container (max-width: 420px) {
+  .searchNavigator {
+    right: 10px;
+    top: 10px;
+  }
+
+  .searchNavButton {
+    min-width: 62px;
+    padding-inline: 6px;
+  }
 }

@@ -41,15 +41,16 @@ function CategoryDialog({ cat }: { cat: VaultCategory | null }) {
     <div className={styles.dialog}>
       <div className={styles.dlgHead}>
         <h3>{cat ? "编辑分类" : "新增分类"}</h3>
-        <button className={styles.dlgClose} title="关闭" onClick={closeModal}>
+        <button type="button" className={styles.dlgClose} title="关闭" aria-label="关闭对话框" onClick={closeModal}>
           ✕
         </button>
       </div>
 
       <div className={styles.field}>
-        <label>名称</label>
+        <label htmlFor="vault-category-name">名称</label>
         <div className={styles.ctl}>
           <input
+            id="vault-category-name"
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -65,9 +66,12 @@ function CategoryDialog({ cat }: { cat: VaultCategory | null }) {
           {ICON_KEYS.map((k) => (
             <button
               key={k}
+              type="button"
               className={`${styles.iconOpt} ${icon === k ? styles.iconOn : ""}`}
               onClick={() => setIcon(k)}
               title={k}
+              aria-label={`选择 ${k} 图标`}
+              aria-pressed={icon === k}
             >
               <CatIcon icon={k} size={16} />
             </button>
@@ -76,16 +80,16 @@ function CategoryDialog({ cat }: { cat: VaultCategory | null }) {
       </div>
 
       <div className={styles.dlgFoot}>
-        <button className={styles.primary} onClick={onSave}>
+        <button type="button" className={styles.primary} onClick={onSave}>
           保存
         </button>
         {cat && (
-          <button className={`${styles.ghost} ${styles.danger}`} onClick={onDelete}>
+          <button type="button" className={`${styles.ghost} ${styles.danger}`} onClick={onDelete}>
             删除
           </button>
         )}
         <span className={styles.footSpacer} />
-        <button className={styles.ghost} onClick={closeModal}>
+        <button type="button" className={styles.ghost} onClick={closeModal}>
           取消
         </button>
       </div>

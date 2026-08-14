@@ -119,93 +119,96 @@ export function VaultForm() {
     <div className={styles.dialog}>
       <div className={styles.dlgHead}>
         <h3>{init.isNew ? "新建密码" : "编辑密码"}</h3>
-        <button className={styles.dlgClose} title="关闭" onClick={close}>
+        <button type="button" className={styles.dlgClose} title="关闭" aria-label="关闭对话框" onClick={close}>
           ✕
         </button>
       </div>
 
       <div className={styles.dlgBody}>
         <div className={`${styles.field} ${styles.spanAll}`}>
-          <label>名称</label>
+          <label htmlFor="vault-title">名称</label>
           <div className={styles.ctl}>
-            <input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：GitHub" />
+            <input id="vault-title" ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：GitHub" />
           </div>
         </div>
 
         <div className={`${styles.field} ${styles.spanAll}`}>
-          <label>分类</label>
-          <div className={styles.catSel}>
+          <label id="vault-category-label">分类</label>
+          <div className={styles.catSel} role="group" aria-labelledby="vault-category-label">
             {categories.map((c) => (
-              <span
+              <button
                 key={c.id}
+                type="button"
                 className={`${styles.catOpt} ${category === c.id ? styles.on : ""}`}
+                aria-pressed={category === c.id}
                 onClick={() => setCategory(c.id)}
               >
                 {c.name}
-              </span>
+              </button>
             ))}
           </div>
         </div>
 
         <div className={styles.field}>
-          <label>用户名 / 邮箱</label>
+          <label htmlFor="vault-username">用户名 / 邮箱</label>
           <div className={styles.ctl}>
-            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="用户名" />
-            <button className={styles.mini} title="复制" onClick={copyUser}>
+            <input id="vault-username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="用户名" />
+            <button type="button" className={styles.mini} title="复制用户名" aria-label="复制用户名" onClick={copyUser} disabled={!username.trim()}>
               <CopyIcon />
             </button>
           </div>
         </div>
 
         <div className={styles.field}>
-          <label>网址</label>
+          <label htmlFor="vault-url">网址</label>
           <div className={styles.ctl}>
-            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
-            <button className={styles.mini} title="打开" onClick={openUrl}>
+            <input id="vault-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
+            <button type="button" className={styles.mini} title="打开网址" aria-label="打开网址" onClick={openUrl} disabled={!url.trim()}>
               <OpenIcon />
             </button>
           </div>
         </div>
 
         <div className={`${styles.field} ${styles.spanAll}`}>
-          <label>密码</label>
+          <label htmlFor="vault-password">密码</label>
           <div className={styles.ctl}>
             <input
+              id="vault-password"
               type={showPass ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="密码"
             />
-            <button className={styles.mini} title="显示 / 隐藏" onClick={() => setShowPass((v) => !v)}>
+            <button type="button" className={styles.mini} title="显示 / 隐藏密码" aria-label="显示或隐藏密码" onClick={() => setShowPass((v) => !v)}>
               <EyeIcon />
             </button>
-            <button className={styles.mini} title="生成强密码" onClick={onGenerate}>
+            <button type="button" className={styles.mini} title="生成强密码" aria-label="生成强密码" onClick={onGenerate}>
               <GenIcon />
             </button>
-            <button className={styles.mini} title="复制" onClick={copyPass}>
+            <button type="button" className={styles.mini} title="复制密码" aria-label="复制密码" onClick={copyPass} disabled={!password}>
               <CopyIcon />
             </button>
           </div>
         </div>
 
         <div className={`${styles.field} ${styles.spanAll}`}>
-          <label>备注（加密）</label>
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="安全备注…" />
+          <label htmlFor="vault-note">备注（加密）</label>
+          <textarea id="vault-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="安全备注…" />
         </div>
       </div>
 
       <div className={styles.dlgFoot}>
-        <button className={styles.primary} onClick={onSave}>
+        <button type="button" className={styles.primary} onClick={onSave}>
           保存
         </button>
         {curEntry && (
-          <button className={`${styles.ghost} ${styles.danger}`} onClick={onDelete}>
+          <button type="button" className={`${styles.ghost} ${styles.danger}`} onClick={onDelete}>
             删除
           </button>
         )}
         <span className={styles.footSpacer} />
         {entry && <span className={styles.meta}>修改 {fmt(entry.updatedAt)}</span>}
-        <button className={styles.ghost} onClick={close}>
+        <button type="button" className={styles.ghost} onClick={close}>
           取消
         </button>
       </div>

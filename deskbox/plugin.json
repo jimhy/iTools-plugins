@@ -1,7 +1,7 @@
 {
   "name": "deskbox",
   "displayName": "云端笔记",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "笔记 · 待办 · 密码：树形笔记（可加密上锁）、待办清单、加密密码管家，支持搜索",
   "author": "you",
   "dataSets": [

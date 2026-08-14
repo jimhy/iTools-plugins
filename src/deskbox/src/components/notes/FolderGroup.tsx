@@ -62,8 +62,17 @@ export function FolderGroup({ folder, notes, dragId, drop, setDrop }: Props) {
     <div className={styles.folder}>
       <div
         className={`${styles.folderHeader} ${isInto ? styles.dropInto : ""} ${isAfter ? styles.dropAfter : ""}`}
+        role="button"
+        tabIndex={editing ? -1 : 0}
+        aria-expanded={expanded}
+        aria-label={`${folder.title || "未命名文件夹"}，${notes.length} 条笔记`}
         draggable={!editing}
         onClick={() => !editing && toggleFolder(folder.id)}
+        onKeyDown={(e) => {
+          if (editing || (e.key !== "Enter" && e.key !== " ")) return;
+          e.preventDefault();
+          toggleFolder(folder.id);
+        }}
         onDoubleClick={(e) => {
           e.preventDefault();
           setDraft(folder.title);
@@ -125,6 +134,7 @@ export function FolderGroup({ folder, notes, dragId, drop, setDrop }: Props) {
             <input
               ref={inputRef}
               className={styles.folderInput}
+              aria-label="文件夹名称"
               value={draft}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setDraft(e.target.value)}

@@ -85,9 +85,15 @@ export function TodoRow({ todo }: { todo: Todo }) {
         if (dragId && dragId !== todo.id) reorder(dragId, todo.id, after);
       }}
     >
-      <span className={`${styles.cbox}${todo.done ? " " + styles.on : ""}`} onClick={() => toggle(todo.id)}>
+      <button
+        type="button"
+        className={`${styles.cbox}${todo.done ? " " + styles.on : ""}`}
+        aria-label={todo.done ? "标记为未完成" : "标记为已完成"}
+        aria-pressed={todo.done}
+        onClick={() => toggle(todo.id)}
+      >
         {todo.done ? "✓" : ""}
-      </span>
+      </button>
 
       {editing ? (
         <input
@@ -109,22 +115,26 @@ export function TodoRow({ todo }: { todo: Todo }) {
         </span>
       )}
 
-      <span
+      <button
+        type="button"
         className={`${styles.prio} ${PRIO_CLASS[todo.priority]}`}
         title="点击切换优先级"
+        aria-label={`优先级：${PRIO_LABEL[todo.priority]}，点击切换`}
         onClick={(e) => {
           e.stopPropagation();
           cyclePriority(todo.id);
         }}
       >
         {PRIO_LABEL[todo.priority]}
-      </span>
+      </button>
 
       <span className={styles.time}>{hhmm(todo.createdAt)}</span>
 
-      <span className={styles.del} title="删除" onClick={() => remove(todo.id)}>
-        ✕
-      </span>
+      <button type="button" className={styles.del} title="删除" aria-label={`删除待办：${todo.text}`} onClick={() => remove(todo.id)}>
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+        </svg>
+      </button>
     </div>
   );
 }

@@ -79,7 +79,19 @@ export function VaultEntryRow({ entry }: { entry: VaultEntry }) {
   };
 
   return (
-    <div className={styles.card} onClick={() => openVaultForm(entry.id)} onContextMenu={onMenu}>
+    <div
+      className={styles.card}
+      role="button"
+      tabIndex={0}
+      aria-label={`编辑密码：${entry.title || "未命名"}`}
+      onClick={() => openVaultForm(entry.id)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        openVaultForm(entry.id);
+      }}
+      onContextMenu={onMenu}
+    >
       <div className={styles.badge} style={{ background: brandColor(entry.title || "?") }}>
         {avatarInitial(entry.title)}
       </div>
@@ -90,12 +102,20 @@ export function VaultEntryRow({ entry }: { entry: VaultEntry }) {
       </div>
       <div className={styles.cardActs}>
         <div className={styles.actIcons}>
-          <button className={styles.act} title={revealed ? "隐藏密码" : "显示密码"} onClick={toggleReveal}>
+          <button
+            type="button"
+            className={styles.act}
+            title={revealed ? "隐藏密码" : "显示密码"}
+            aria-label={revealed ? "隐藏密码" : "显示密码"}
+            onClick={toggleReveal}
+          >
             <EyeIcon size={16} />
           </button>
           <button
+            type="button"
             className={styles.act}
             title="复制密码"
+            aria-label="复制密码"
             onClick={(e) => {
               e.stopPropagation();
               void copyPassword(entry);
@@ -104,7 +124,7 @@ export function VaultEntryRow({ entry }: { entry: VaultEntry }) {
             <CopyIcon size={16} />
           </button>
         </div>
-        <span className={`${styles.strength} ${stClass}`} title={`强度：${stLabel}`} />
+        <span className={`${styles.strength} ${stClass}`} role="img" aria-label={`密码强度：${stLabel}`} title={`强度：${stLabel}`} />
       </div>
     </div>
   );

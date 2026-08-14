@@ -27,7 +27,7 @@ export function VaultGate() {
         <h3>{title}</h3>
         <p>{cryptoOk ? desc : "当前运行环境不支持 Web Crypto，无法启用加密密码库。"}</p>
         {cryptoOk && (
-          <button className={styles.primary} onClick={onClick}>
+          <button type="button" className={styles.primary} onClick={onClick}>
             {hasMaster ? "解锁" : "创建主密码"}
           </button>
         )}

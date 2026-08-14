@@ -28,7 +28,7 @@ export function GeneratePasswordDialog({ onUse }: Props) {
   return (
     <>
       <h3 className={styles.title}>生成强密码</h3>
-      <input className={`${styles.input} ${styles.genOut}`} readOnly value={out} />
+      <input className={`${styles.input} ${styles.genOut}`} aria-label="生成的密码" readOnly value={out} />
       <div className={styles.genOpts}>
         <label>
           长度
@@ -55,13 +55,14 @@ export function GeneratePasswordDialog({ onUse }: Props) {
         </label>
       </div>
       <div className={styles.row}>
-        <button className={styles.ghost} onClick={regen}>
+        <button type="button" className={styles.ghost} onClick={regen}>
           ↻ 换一个
         </button>
-        <button className={styles.ghost} onClick={closeModal}>
+        <button type="button" className={styles.ghost} onClick={closeModal}>
           关闭
         </button>
         <button
+          type="button"
           className={styles.primary}
           onClick={() => {
             onUse(out);

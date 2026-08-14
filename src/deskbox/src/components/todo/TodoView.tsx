@@ -34,6 +34,7 @@ export function TodoView() {
   const pct = total ? Math.round((done / total) * 100) : 0;
 
   const submit = () => {
+    if (!input.trim()) return;
     add(input);
     setInput("");
   };
@@ -41,7 +42,7 @@ export function TodoView() {
   return (
     <div className={styles.view}>
       <aside className={styles.sidebar}>
-        <button className={styles.newBtn} onClick={() => inputRef.current?.focus()}>
+        <button type="button" className={styles.newBtn} onClick={() => inputRef.current?.focus()}>
           ＋ 新建待办
         </button>
         <div className={styles.divider} />
@@ -58,7 +59,14 @@ export function TodoView() {
           <span className={styles.progLabel}>
             {done} / {total} 已完成
           </span>
-          <div className={styles.bar}>
+          <div
+            className={styles.bar}
+            role="progressbar"
+            aria-label={`${def?.name ?? "待办"}完成进度`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+          >
             <div className={styles.fill} style={{ width: pct + "%" }} />
           </div>
         </div>
@@ -67,6 +75,7 @@ export function TodoView() {
           <input
             ref={inputRef}
             className={styles.addInput}
+            aria-label="待办内容"
             value={input}
             placeholder="输入待办，回车添加到当前分类…"
             spellCheck={false}
@@ -75,7 +84,7 @@ export function TodoView() {
               if (e.key === "Enter") submit();
             }}
           />
-          <button className={styles.addBtn} onClick={submit}>
+          <button type="button" className={styles.addBtn} onClick={submit} disabled={!input.trim()}>
             添加
           </button>
         </div>

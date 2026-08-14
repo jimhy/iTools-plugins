@@ -12,7 +12,7 @@ import { decWith, encWith } from "../services/crypto";
 import { useCryptoStore } from "./cryptoStore";
 import { toast } from "./toastStore";
 import { ensureUnlocked } from "../components/notes/ensureUnlocked";
-import { errMsg, makeExcerpt } from "../components/notes/util";
+import { errMsg, makeExcerpt, searchableText } from "../components/notes/util";
 import { mdToHtml } from "../components/notes/markdown";
 import { collectAssetIds, deleteImage } from "../services/assets";
 
@@ -24,6 +24,9 @@ const childrenOf = (tree: NoteNode[], pid: string | null) =>
 const reindex = (tree: NoteNode[], pid: string | null) => childrenOf(tree, pid).forEach((n, i) => (n.order = i));
 
 const findNode = (tree: NoteNode[], id: string | null) => (id ? tree.find((n) => n.id === id) ?? null : null);
+
+/** 生成大小写不敏感的字面量全局匹配器；保留原文本 UTF-16 偏移，便于映射编辑器位置。 */
+const literalMatcher = (query: string) => new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
 
 /** nodeId 的任一祖先是否为 ancestorId（防止把节点拖进自己的子树）。 */
 function isAncestor(tree: NoteNode[], ancestorId: string, nodeId: string | null): boolean {
@@ -92,7 +95,28 @@ async function purgeAssetsFor(nodeIds: string[], curNote: string | null, draftBo
 
 export interface NoteHit {
   node: NoteNode;
+  field: "title" | "body";
+  /** 当前字段中的第几处命中（从 0 开始），供编辑器精确定位。 */
+  occurrence: number;
+  /** 可见文本中的起始偏移，仅用于稳定 key / 调试，不用于改写正文。 */
+  matchIndex: number;
+  query: string;
   snippet: string;
+}
+
+export interface NoteSearchMatch {
+  field: "title" | "body";
+  occurrence: number;
+}
+
+export interface NoteSearchTarget {
+  noteId: string;
+  query: string;
+  /** 当前文档内的全部命中；侧栏只展示一次，由编辑区在这些位置间循环。 */
+  matches: NoteSearchMatch[];
+  activeIndex: number;
+  /** 每次打开文档或切换命中均递增，保证编辑器重新定位并反馈。 */
+  requestId: number;
 }
 
 interface NotesState {
@@ -108,6 +132,8 @@ interface NotesState {
   draftBody: string;
   /** 每次新建笔记自增，触发编辑器聚焦标题。 */
   titleFocusTick: number;
+  /** 最近一次明确点击的搜索命中；EditorPane 消费它完成滚动和装饰高亮。 */
+  searchTarget: NoteSearchTarget | null;
 
   load: () => Promise<void>;
   toggleFolder: (id: string) => void;
@@ -129,10 +155,14 @@ interface NotesState {
   /** 立即落盘待保存的草稿（切换/卸载/退出前调）。 */
   flush: () => void;
   searchNotes: (q: string) => Promise<NoteHit[]>;
+  openSearchDocument: (hits: NoteHit[]) => Promise<void>;
+  stepSearchTarget: (delta: -1 | 1) => void;
 }
 
 // 防抖保存计时器（非响应式，放模块作用域）。
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let openRequestSeq = 0;
+let searchRequestSeq = 0;
 
 export const useNotesStore = create<NotesState>((set, get) => {
   const scheduleSave = () => {
@@ -156,6 +186,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
     draftTitle: "",
     draftBody: "",
     titleFocusTick: 0,
+    searchTarget: null,
 
     load: async () => {
       const tree = (await store.get<NoteNode[]>(KEY.tree)) ?? [];
@@ -216,6 +247,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
     },
 
     openNote: async (id, isNew = false) => {
+      const requestId = ++openRequestSeq;
       get().flush();
       const node = findNode(get().tree, id);
       if (!node || node.type !== "note") return;
@@ -226,8 +258,10 @@ export const useNotesStore = create<NotesState>((set, get) => {
         toast("未解锁，无法打开此加密笔记");
         return;
       }
+      // 后发的打开操作优先，避免连续点击不同搜索结果时旧异步读取反向覆盖新笔记。
+      if (requestId !== openRequestSeq) return;
       // 旧版 Markdown 正文迁移为 HTML（新笔记为空；已是 HTML 的原样返回）。
-      set({ curNote: id, selId: id, draftTitle: node.title || "", draftBody: mdToHtml(text) });
+      set({ curNote: id, selId: id, draftTitle: node.title || "", draftBody: mdToHtml(text), searchTarget: null });
     },
 
     rename: (id, title) => {
@@ -436,16 +470,23 @@ export const useNotesStore = create<NotesState>((set, get) => {
     },
 
     searchNotes: async (q) => {
-      const query = q.toLowerCase();
-      const notes = get().tree.filter((n) => n.type === "note");
+      const query = q.trim();
+      if (!query) return [];
+      const snapshot = get();
+      const notes = snapshot.tree.filter((n) => n.type === "note");
       const cs = useCryptoStore.getState();
       const hits: NoteHit[] = [];
       for (const n of notes) {
         const title = n.title || "";
-        let snippet = "";
-        let matched = title.toLowerCase().includes(query);
-        const raw = await store.get<NoteBody>(KEY.body(n.id));
-        if (raw) {
+        const titleMatch = literalMatcher(query).exec(title);
+        if (titleMatch?.index != null) {
+          hits.push({ node: n, field: "title", occurrence: 0, matchIndex: titleMatch.index, query, snippet: "" });
+        }
+
+        // 当前已打开笔记优先搜索内存草稿，保证尚未落盘的编辑也能正确命中并定位。
+        let body: string | null = n.id === snapshot.curNote ? snapshot.draftBody : null;
+        const raw = body == null ? await store.get<NoteBody>(KEY.body(n.id)) : null;
+        if (body == null && raw) {
           let text: string | null = null;
           if (!raw.enc) text = raw.text || "";
           else if (cs.isUnlocked() && cs.masterKey) {
@@ -455,17 +496,64 @@ export const useNotesStore = create<NotesState>((set, get) => {
               text = null;
             }
           }
-          if (text) {
-            const i = text.toLowerCase().indexOf(query);
-            if (i >= 0) {
-              matched = true;
-              snippet = text.slice(Math.max(0, i - 12), i + 40);
-            }
-          }
+          body = text;
         }
-        if (matched) hits.push({ node: n, snippet });
+
+        if (!body) continue;
+        const visible = searchableText(mdToHtml(body));
+        let occurrence = 0;
+        const matcher = literalMatcher(query);
+        let match: RegExpExecArray | null;
+        // 返回每一处正文命中，而非每篇笔记只返回第一处；设置上限防止极端正文淹没侧栏。
+        while (occurrence < 200 && (match = matcher.exec(visible))) {
+          const index = match.index;
+          const before = Math.max(0, index - 20);
+          const after = Math.min(visible.length, index + query.length + 40);
+          hits.push({
+            node: n,
+            field: "body",
+            occurrence,
+            matchIndex: index,
+            query,
+            snippet: `${before > 0 ? "…" : ""}${visible.slice(before, after)}${after < visible.length ? "…" : ""}`,
+          });
+          occurrence += 1;
+        }
       }
       return hits;
+    },
+
+    openSearchDocument: async (hits) => {
+      const first = hits[0];
+      if (!first) return;
+      const documentHits = hits.filter((hit) => hit.node.id === first.node.id && hit.query === first.query);
+      if (documentHits.length === 0) return;
+      const requestId = ++searchRequestSeq;
+      // 同一笔记内重新打开搜索结果不重新读盘，避免覆盖未保存草稿或干扰当前选区/焦点。
+      if (get().curNote !== first.node.id) await get().openNote(first.node.id);
+      if (requestId !== searchRequestSeq || get().curNote !== first.node.id) return;
+      set({
+        searchTarget: {
+          noteId: first.node.id,
+          query: first.query,
+          matches: documentHits.map(({ field, occurrence }) => ({ field, occurrence })),
+          activeIndex: 0,
+          requestId,
+        },
+      });
+    },
+
+    stepSearchTarget: (delta) => {
+      const target = get().searchTarget;
+      if (!target || target.matches.length <= 1) return;
+      const activeIndex = (target.activeIndex + delta + target.matches.length) % target.matches.length;
+      set({
+        searchTarget: {
+          ...target,
+          activeIndex,
+          requestId: ++searchRequestSeq,
+        },
+      });
     },
   };
 });

@@ -20,23 +20,30 @@ export function VaultSidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      <button className={styles.newBtn} onClick={() => openVaultForm(null)}>
+      <button type="button" className={styles.newBtn} onClick={() => openVaultForm(null)}>
         ＋ 新建密码
       </button>
       <div className={styles.divider} />
-      <div className={styles.catList}>
-        <div className={`${styles.catItem} ${cat === "all" ? styles.active : ""}`} onClick={() => setCat("all")}>
+      <div className={styles.catList} aria-label="密码分类">
+        <button
+          type="button"
+          className={`${styles.catItem} ${cat === "all" ? styles.active : ""}`}
+          aria-pressed={cat === "all"}
+          onClick={() => setCat("all")}
+        >
           <span className={styles.catIco}>
             <CatIcon icon="all" />
           </span>
           <span className={styles.catName}>全部</span>
           <span className={styles.catCount}>{countOf("all")}</span>
-        </div>
+        </button>
 
         {categories.map((c) => (
-          <div
+          <button
             key={c.id}
+            type="button"
             className={`${styles.catItem} ${cat === c.id ? styles.active : ""}`}
+            aria-pressed={cat === c.id}
             onClick={() => setCat(c.id)}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -64,10 +71,10 @@ export function VaultSidebar() {
             </span>
             <span className={styles.catName}>{c.name}</span>
             <span className={styles.catCount}>{countOf(c.id)}</span>
-          </div>
+          </button>
         ))}
 
-        <button className={styles.addCat} onClick={() => openCategoryDialog(null)}>
+        <button type="button" className={styles.addCat} onClick={() => openCategoryDialog(null)}>
           ＋ 新增分类
         </button>
       </div>

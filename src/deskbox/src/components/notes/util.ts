@@ -49,6 +49,33 @@ export function htmlToText(html: string): string {
     .trim();
 }
 
+/**
+ * 富文本 HTML → 搜索用可见文本。
+ *
+ * 与 htmlToText 的区别是：行内标签不会凭空插入空格（例如
+ * `hello<strong>world</strong>` 仍是 `helloworld`），块级边界才折叠为一个空格。
+ * 这样搜索结果可稳定映射回 ProseMirror 的可见文本节点，而不会命中标签名或属性。
+ */
+export function searchableText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<(?:br\s*\/?>|\/(?:p|div|h[1-6]|li|blockquote|pre|ul|ol))\s*>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    // 单次解码，避免把用户可见的 `&amp;lt;` 错误二次解成 `<`。
+    .replace(/&(nbsp|amp|lt|gt|quot|apos|#(\d+)|#x([\da-f]+));/gi, (_entity, name: string, decimal?: string, hex?: string) => {
+      const named: Record<string, string> = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+      const key = name.toLowerCase();
+      if (named[key] != null) return named[key];
+      const codePoint = decimal ? Number(decimal) : Number.parseInt(hex || "", 16);
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : "�";
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** 正文（HTML 或旧版 Markdown）→ 可见纯文本。HTML 剥标签；Markdown 剥常见记号。 */
 export function plainText(body: string): string {
   if (/<[a-z!/][^>]*>/i.test(body)) return htmlToText(body);

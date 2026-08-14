@@ -7,6 +7,8 @@
  */
 import { useEffect, useReducer, useRef, type ChangeEvent, type JSX, type MouseEvent } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
@@ -29,6 +31,90 @@ import styles from "./EditorPane.module.css";
 
 const IMG_EXT = /\.(png|jpe?g|gif|bmp|webp|svg|ico|tiff?)$/i;
 
+interface SearchDecorationMeta {
+  from?: number;
+  to?: number;
+  requestId: number;
+}
+
+const searchHighlightPluginKey = new PluginKey<DecorationSet>("noteSearchHighlight");
+
+/** 搜索高亮仅存在于 ProseMirror decoration，不会写入正文 HTML 或触发保存。 */
+function createSearchHighlightPlugin() {
+  return new Plugin<DecorationSet>({
+    key: searchHighlightPluginKey,
+    state: {
+      init: () => DecorationSet.empty,
+      apply: (transaction, current) => {
+        const meta = transaction.getMeta(searchHighlightPluginKey) as SearchDecorationMeta | undefined;
+        if (meta) {
+          if (meta.from == null || meta.to == null) return DecorationSet.empty;
+          return DecorationSet.create(transaction.doc, [
+            Decoration.inline(meta.from, meta.to, {
+              class: styles.searchHit,
+              "data-note-search-hit": String(meta.requestId),
+            }),
+          ]);
+        }
+        return current.map(transaction.mapping, transaction.doc);
+      },
+    },
+    props: {
+      decorations: (state) => searchHighlightPluginKey.getState(state) ?? null,
+    },
+  });
+}
+
+/**
+ * 构造与 notesStore.searchableText 一致的可见文本，同时保留每个字符对应的 ProseMirror 位置。
+ * 相邻行内 mark 不插空格，块节点/换行间只插一个空格。
+ */
+function editorSearchText(editor: Editor): { text: string; positions: number[] } {
+  let text = "";
+  const positions: number[] = [];
+  let lastTextEnd: number | null = null;
+
+  const append = (char: string, position: number) => {
+    if (/\s/.test(char)) {
+      if (!text || text.endsWith(" ")) return;
+      text += " ";
+      positions.push(position);
+      return;
+    }
+    text += char;
+    positions.push(position);
+  };
+
+  editor.state.doc.descendants((node, position) => {
+    if (!node.isText || !node.text) return;
+    if (lastTextEnd != null && position > lastTextEnd) append(" ", lastTextEnd);
+    for (let i = 0; i < node.text.length; i += 1) append(node.text[i], position + i);
+    lastTextEnd = position + node.nodeSize;
+  });
+
+  if (text.endsWith(" ")) {
+    text = text.slice(0, -1);
+    positions.pop();
+  }
+  return { text, positions };
+}
+
+function findSearchRange(editor: Editor, query: string, occurrence: number): { from: number; to: number } | null {
+  if (!query) return null;
+  const { text, positions } = editorSearchText(editor);
+  const matcher = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
+  let match: RegExpExecArray | null = null;
+  for (let i = 0; i <= occurrence; i += 1) {
+    match = matcher.exec(text);
+    if (!match) return null;
+  }
+  if (!match) return null;
+  const index = match.index;
+  const start = positions[index];
+  const end = positions[index + match[0].length - 1];
+  return start == null || end == null ? null : { from: start, to: end + 1 };
+}
+
 /** 文本是否是一个本地图片文件路径（Windows 盘符 / UNC / 类 Unix 根 + 图片扩展名）。 */
 function isLocalImagePath(text: string): boolean {
   const t = text.replace(/^["']|["']$/g, "").trim();
@@ -44,6 +130,8 @@ export function EditorPane() {
   const draftTitle = useNotesStore((s) => s.draftTitle);
   const draftBody = useNotesStore((s) => s.draftBody);
   const titleFocusTick = useNotesStore((s) => s.titleFocusTick);
+  const searchTarget = useNotesStore((s) => s.searchTarget);
+  const stepSearchTarget = useNotesStore((s) => s.stepSearchTarget);
   const setDraftTitle = useNotesStore((s) => s.setDraftTitle);
   const toggleLock = useNotesStore((s) => s.toggleLock);
   const toggleStar = useNotesStore((s) => s.toggleStar);
@@ -54,6 +142,7 @@ export function EditorPane() {
   const fileRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const [, force] = useReducer((x: number) => x + 1, 0);
+  const activeSearchMatch = searchTarget?.matches[searchTarget.activeIndex] ?? null;
 
   // ---- 图片本地化插入（粘贴 / 拖入 / 路径 / 文件选择共用）----
   const insertImageBytes = async (ed: Editor, bytes: ArrayBuffer, mime: string, at?: number) => {
@@ -137,6 +226,15 @@ export function EditorPane() {
     editorRef.current = editor;
   }, [editor]);
 
+  // 注册搜索装饰插件；插件随编辑器销毁，不污染其他编辑器实例。
+  useEffect(() => {
+    if (!editor) return;
+    editor.registerPlugin(createSearchHighlightPlugin());
+    return () => {
+      editor.unregisterPlugin(searchHighlightPluginKey);
+    };
+  }, [editor]);
+
   // 编辑器 transaction 时刷新工具栏激活态。
   useEffect(() => {
     if (!editor) return;
@@ -157,6 +255,67 @@ export function EditorPane() {
       loadedFor.current = null;
     }
   }, [editor, curNote, draftBody]);
+
+  // 搜索结果导航：等待目标笔记内容灌入后精确定位；只滚动并装饰，不改变焦点或选区。
+  useEffect(() => {
+    if (!editor) return;
+    if (!searchTarget || !activeSearchMatch || searchTarget.noteId !== curNote) {
+      editor.view.dispatch(
+        editor.state.tr.setMeta(searchHighlightPluginKey, { requestId: 0 } satisfies SearchDecorationMeta),
+      );
+      return;
+    }
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearBodyHighlight = () => {
+      editor.view.dispatch(
+        editor.state.tr.setMeta(searchHighlightPluginKey, { requestId: searchTarget.requestId } satisfies SearchDecorationMeta),
+      );
+    };
+
+    if (activeSearchMatch.field === "title") {
+      clearBodyHighlight();
+      requestAnimationFrame(() => {
+        if (!cancelled) titleRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    let attempts = 0;
+    const locate = () => {
+      if (cancelled) return;
+      const range = findSearchRange(editor, searchTarget.query, activeSearchMatch.occurrence);
+      if (!range) {
+        // TipTap 初始化 / 异步 setContent 可能晚一帧；短时间重试，且新点击会立即取消旧任务。
+        attempts += 1;
+        if (attempts < 12) retryTimer = setTimeout(locate, attempts < 4 ? 16 : 50);
+        return;
+      }
+      editor.view.dispatch(
+        editor.state.tr.setMeta(searchHighlightPluginKey, {
+          ...range,
+          requestId: searchTarget.requestId,
+        } satisfies SearchDecorationMeta),
+      );
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        const hit = editor.view.dom.querySelector<HTMLElement>(
+          `[data-note-search-hit="${searchTarget.requestId}"]`,
+        );
+        const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        hit?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "nearest" });
+      });
+    };
+    locate();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [editor, curNote, searchTarget, activeSearchMatch]);
 
   // 新建笔记后聚焦标题。
   const lastTick = useRef(titleFocusTick);
@@ -276,55 +435,66 @@ export function EditorPane() {
   return (
     <div className={styles.pane}>
       <header className={styles.head}>
-        <div className={styles.topRow}>
-          <div className={styles.breadcrumb}>
+        <div className={styles.headMain}>
+          <div className={styles.headInfo}>
             {folder && (
-              <>
+              <div className={styles.breadcrumb} title={folder.title || "未命名文件夹"}>
                 <span className={styles.crumbIco}><IconFolder size={13} /></span>
                 <span className={styles.crumbFolder}>{folder.title || "未命名文件夹"}</span>
                 <span className={styles.crumbSep}><IconChevron size={12} /></span>
-              </>
+              </div>
             )}
-            <span className={styles.crumbCur}>{draftTitle || "未命名笔记"}</span>
+
+            <input
+              ref={titleRef}
+              className={`${styles.title} ${searchTarget?.noteId === curNote && activeSearchMatch?.field === "title" ? styles.titleSearchHit : ""}`}
+              aria-label="笔记标题"
+              placeholder="无标题"
+              spellCheck={false}
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+            />
+
+            <div className={styles.metaRow}>
+              <span className={styles.metaItem}><IconHistory /> 编辑于 {fmtShort(node.updatedAt)}</span>
+              <span className={styles.metaItem}><IconFileText /> {wordCount(draftBody)} 字</span>
+              {node.locked && <span className={`${styles.metaItem} ${styles.lockedMeta}`}>已加密</span>}
+              {tags.length > 0 && <span className={styles.metaItem}><IconHash /> {tags.length} 标签</span>}
+              {tags.length > 0 && (
+                <span className={styles.tags} aria-label={`标签：${tags.join("、")}`}>
+                  {tags.map((t) => (
+                    <span key={t} className={styles.tag}>#{t}</span>
+                  ))}
+                </span>
+              )}
+            </div>
           </div>
+
           <div className={styles.actions}>
             <button
+              type="button"
               className={`${styles.actBtn} ${node.starred ? styles.actStar : ""}`}
+              aria-label={node.starred ? "取消收藏" : "收藏"}
+              aria-pressed={!!node.starred}
               title={node.starred ? "取消收藏" : "收藏"}
               onClick={() => toggleStar(node.id)}
             >
               <IconStar filled={!!node.starred} />
             </button>
-            <button className={styles.actBtn} title="复制全文" onClick={shareNote}>
+            <button type="button" className={styles.actBtn} aria-label="复制全文" title="复制全文" onClick={shareNote}>
               <IconShare />
             </button>
-            <button className={styles.actBtn} title="更多" onClick={onMore}>
+            <button
+              type="button"
+              className={styles.actBtn}
+              aria-label="更多笔记操作"
+              aria-haspopup="menu"
+              title="更多"
+              onClick={onMore}
+            >
               <IconEllipsis />
             </button>
           </div>
-        </div>
-
-        <input
-          ref={titleRef}
-          className={styles.title}
-          placeholder="无标题"
-          spellCheck={false}
-          value={draftTitle}
-          onChange={(e) => setDraftTitle(e.target.value)}
-        />
-
-        <div className={styles.metaRow}>
-          <span className={styles.metaItem}><IconHistory /> 编辑于 {fmtShort(node.updatedAt)}</span>
-          <span className={styles.metaItem}><IconFileText /> {wordCount(draftBody)} 字</span>
-          {node.locked && <span className={styles.metaItem}>已加密</span>}
-          {tags.length > 0 && <span className={styles.metaItem}><IconHash /> {tags.length} 标签</span>}
-          {tags.length > 0 && (
-            <span className={styles.tags}>
-              {tags.map((t) => (
-                <span key={t} className={styles.tag}>#{t}</span>
-              ))}
-            </span>
-          )}
         </div>
       </header>
 
@@ -336,7 +506,10 @@ export function EditorPane() {
               {g.map((b) => (
                 <button
                   key={b.key}
+                  type="button"
                   className={`${styles.fmtBtn} ${b.on ? styles.fmtOn : ""}`}
+                  aria-label={b.title}
+                  aria-pressed={b.on === undefined ? undefined : b.on}
                   title={b.title}
                   disabled={b.disabled}
                   onMouseDown={(e) => e.preventDefault()}
@@ -351,8 +524,41 @@ export function EditorPane() {
         <span className={styles.wysiwygTag}>编辑即预览</span>
       </div>
 
-      <div className={styles.bodyWrap} onClickCapture={onEditorClick}>
-        <EditorContent editor={editor} className={styles.editorHost} />
+      <div className={styles.editorArea}>
+        <div className={styles.bodyWrap} onClickCapture={onEditorClick}>
+          <EditorContent editor={editor} className={styles.editorHost} />
+        </div>
+        {searchTarget?.noteId === curNote && activeSearchMatch && (
+          <div className={styles.searchNavigator} role="group" aria-label="当前文档搜索命中导航">
+            <span
+              className={styles.searchPosition}
+              aria-live="polite"
+              title={`第 ${searchTarget.activeIndex + 1} 处，共 ${searchTarget.matches.length} 处`}
+            >
+              {searchTarget.activeIndex + 1}/{searchTarget.matches.length}
+            </span>
+            <button
+              type="button"
+              className={`${styles.searchNavButton} ${styles.searchNavPrev}`}
+              disabled={searchTarget.matches.length <= 1}
+              aria-label="跳转到本文档上一个匹配位置"
+              onClick={() => stepSearchTarget(-1)}
+            >
+              <IconChevron size={12} />
+              <span>上一个</span>
+            </button>
+            <button
+              type="button"
+              className={styles.searchNavButton}
+              disabled={searchTarget.matches.length <= 1}
+              aria-label="跳转到本文档下一个匹配位置"
+              onClick={() => stepSearchTarget(1)}
+            >
+              <span>下一个</span>
+              <IconChevron size={12} />
+            </button>
+          </div>
+        )}
       </div>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFilesPicked} />
     </div>

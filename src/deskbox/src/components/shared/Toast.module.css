@@ -9,6 +9,7 @@
   align-items: center;
   z-index: 2147483647;
   pointer-events: none;
+  width: min(420px, calc(100vw - 32px));
 }
 
 .toast {
@@ -20,6 +21,9 @@
   font-size: 13px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   animation: rise 0.18s ease;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 @keyframes rise {

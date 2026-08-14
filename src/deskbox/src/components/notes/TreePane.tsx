@@ -1,10 +1,11 @@
 /** 左侧栏：新建按钮 + 「笔记库」分区标题 + 笔记列表（有搜索词时切换为搜索结果）。右缘可拖动调宽。 */
-import { useEffect, type MouseEvent } from "react";
+import { useEffect, type KeyboardEvent, type MouseEvent } from "react";
 import { useNotesStore } from "../../state/notesStore";
 import { useUiStore } from "../../state/uiStore";
 import { store, KEY } from "../../services/store";
 import { NotesList } from "./NotesList";
 import { SearchResults } from "./SearchResults";
+import { IconPlus } from "./icons";
 import styles from "./TreePane.module.css";
 
 const MIN_W = 180;
@@ -40,14 +41,24 @@ export function TreePane() {
     window.addEventListener("mouseup", up);
   };
 
+  const onResizeKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const next = Math.min(MAX_W, Math.max(MIN_W, width + (e.key === "ArrowRight" ? 12 : -12)));
+    setWidth(next);
+    void store.set(KEY.sidebarW, next);
+  };
+
   return (
     <aside className={styles.pane} style={{ width }}>
       <div className={styles.actions}>
-        <button className={styles.newNote} onClick={() => void newNode("note")}>
-          ＋ 笔记
+        <button type="button" className={styles.createBtn} onClick={() => void newNode("note")}>
+          <IconPlus size={13} />
+          <span>笔记</span>
         </button>
-        <button className={styles.newFolder} onClick={() => void newNode("folder")}>
-          ＋ 文件夹
+        <button type="button" className={styles.createBtn} onClick={() => void newNode("folder")}>
+          <IconPlus size={13} />
+          <span>文件夹</span>
         </button>
       </div>
       <div className={styles.divider} />
@@ -56,7 +67,19 @@ export function TreePane() {
         {!query && <span className={styles.countBadge}>{noteCount}</span>}
       </div>
       {query ? <SearchResults query={query} /> : <NotesList />}
-      <div className={styles.resizer} onMouseDown={onResizeDown} title="拖动调整宽度" />
+      <div
+        className={styles.resizer}
+        role="separator"
+        aria-label="调整笔记列表宽度"
+        aria-orientation="vertical"
+        aria-valuemin={MIN_W}
+        aria-valuemax={MAX_W}
+        aria-valuenow={width}
+        tabIndex={0}
+        onMouseDown={onResizeDown}
+        onKeyDown={onResizeKeyDown}
+        title="拖动或使用左右方向键调整宽度"
+      />
     </aside>
   );
 }

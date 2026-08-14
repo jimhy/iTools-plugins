@@ -32,6 +32,7 @@ export function UnlockDialog() {
       <div className={styles.desc}>输入主密码。</div>
       <input
         className={styles.input}
+        aria-label="主密码"
         type="password"
         autoFocus
         placeholder="主密码"
@@ -42,12 +43,12 @@ export function UnlockDialog() {
         }}
         onKeyDown={(e) => e.key === "Enter" && submit()}
       />
-      <div className={styles.err}>{err}</div>
+      <div className={styles.err} role="alert">{err}</div>
       <div className={styles.row}>
-        <button className={styles.ghost} onClick={closeModal}>
+        <button type="button" className={styles.ghost} onClick={closeModal}>
           取消
         </button>
-        <button className={styles.primary} onClick={submit} disabled={busy}>
+        <button type="button" className={styles.primary} onClick={submit} disabled={busy}>
           {busy ? "解锁中…" : "解锁"}
         </button>
       </div>

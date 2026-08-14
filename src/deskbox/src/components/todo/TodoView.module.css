@@ -2,11 +2,12 @@
   flex: 1;
   display: flex;
   min-height: 0;
+  min-width: 0;
 }
 
 /* ---------- 左分类栏 ---------- */
 .sidebar {
-  flex: 0 0 240px;
+  flex: 0 1 clamp(176px, 28vw, 240px);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -20,12 +21,13 @@
   border: 0;
   background: var(--grad);
   color: var(--on-accent);
-  padding: 11px;
+  height: var(--control-h);
+  padding: 0 12px;
   font-size: 13.5px;
   font-weight: 600;
   border-radius: var(--r-md);
   box-shadow: var(--glow);
-  transition: box-shadow 0.12s;
+  transition: box-shadow var(--motion-fast), opacity var(--motion-fast);
 }
 
 .newBtn:hover {
@@ -53,6 +55,8 @@
   align-items: flex-end;
   justify-content: space-between;
   padding: 20px 24px 14px;
+  gap: 16px;
+  min-width: 0;
 }
 
 .title {
@@ -65,6 +69,7 @@
   font: 12px var(--mono);
   color: var(--faint);
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 /* ---------- 进度条 ---------- */
@@ -94,7 +99,7 @@
   border-radius: 3px;
   background: var(--grad);
   box-shadow: 0 0 8px #38e1c955;
-  transition: width 0.3s;
+  transition: width 260ms ease;
 }
 
 /* ---------- 输入框 ---------- */
@@ -106,14 +111,14 @@
 
 .addInput {
   flex: 1;
-  height: 38px;
+  height: var(--control-h);
   border: 1px solid var(--line);
   background: var(--inset);
   padding: 0 14px;
   font-size: 14px;
   border-radius: var(--r-md);
   outline: none;
-  transition: border-color 0.12s;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 .addInput::placeholder {
@@ -122,23 +127,29 @@
 
 .addInput:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .addBtn {
   border: 0;
   background: var(--grad);
   color: var(--on-accent);
-  padding: 9px 18px;
+  height: var(--control-h);
+  padding: 0 18px;
   font-size: 13px;
   font-weight: 600;
   border-radius: var(--r-md);
   box-shadow: var(--glow);
-  transition: box-shadow 0.12s, opacity 0.12s;
+  transition: box-shadow var(--motion-fast), opacity var(--motion-fast);
 }
 
 .addBtn:hover {
   box-shadow: 0 3px 20px #38e1c960;
   opacity: 0.95;
+}
+
+.addBtn:disabled:hover {
+  box-shadow: var(--glow);
 }
 
 /* ---------- 列表 ---------- */
@@ -173,4 +184,37 @@
 .emptyBig svg {
   width: 34px;
   height: 34px;
+}
+
+@media (max-width: 680px) {
+  .sidebar {
+    padding-inline: 10px;
+  }
+
+  .head {
+    padding: 16px 16px 12px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .progress,
+  .add {
+    padding-inline: 16px;
+  }
+
+  .list {
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .date {
+    display: none;
+  }
+
+  .addBtn {
+    padding-inline: 12px;
+  }
 }

@@ -7,7 +7,7 @@ export function Modal() {
   if (!content) return null;
   return (
     <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className={styles.card} style={width ? { width } : undefined}>
+      <div className={styles.card} role="dialog" aria-modal="true" style={width ? { width } : undefined}>
         {content}
       </div>
     </div>

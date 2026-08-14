@@ -8,12 +8,15 @@
   padding: 0 18px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+  min-width: 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .logo {
@@ -32,6 +35,8 @@
   font-weight: 700;
   font-size: 17px;
   letter-spacing: 0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tabs {
@@ -41,6 +46,7 @@
   border-radius: var(--r-pill);
   background: var(--inset);
   border: 1px solid var(--line);
+  flex: 0 0 auto;
 }
 
 .tab {
@@ -48,17 +54,20 @@
   background: transparent;
   color: var(--sub);
   border-radius: var(--r-md);
-  padding: 7px 14px;
+  min-height: 34px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: color 0.12s, background 0.12s;
+  white-space: nowrap;
+  transition: color var(--motion-fast), background var(--motion-fast);
 }
 
 .tab:hover {
   color: var(--text);
+  background: var(--hover);
 }
 
 .active {
@@ -71,6 +80,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1 1 180px;
+  min-width: 100px;
+  justify-content: flex-end;
 }
 
 .searchBox {
@@ -78,17 +90,19 @@
   align-items: center;
   gap: 8px;
   width: 240px;
+  max-width: 100%;
   height: 38px;
   padding: 0 12px;
   border-radius: var(--r-lg);
   background: var(--inset);
   border: 1px solid var(--line);
   color: var(--faint);
-  transition: border-color 0.12s;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
 }
 
 .searchBox:focus-within {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .searchBox:focus-within svg {
@@ -120,10 +134,59 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-lg);
-  transition: color 0.12s, border-color 0.12s;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
 .iconBtn:hover {
   border-color: var(--accent);
   color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    gap: 10px;
+    padding-inline: 12px;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+  }
+
+  .name {
+    display: none;
+  }
+
+  .tab {
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  .tabs {
+    gap: 2px;
+    padding: 3px;
+  }
+
+  .tab {
+    gap: 4px;
+    padding-inline: 7px;
+  }
+
+  .right {
+    min-width: 72px;
+  }
+
+  .searchBox {
+    padding-inline: 9px;
+  }
 }

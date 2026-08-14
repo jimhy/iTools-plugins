@@ -35,7 +35,7 @@ export function VaultMain() {
             <span className={styles.mono}>{list.length}</span> 条凭据 · AES-256 加密
           </div>
         </div>
-        <button className={styles.lockBtn} title="锁定密码库" onClick={onLock}>
+        <button type="button" className={styles.lockBtn} title="锁定密码库" onClick={onLock}>
           <LockIcon size={14} />
           锁定
         </button>

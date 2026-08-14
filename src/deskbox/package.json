@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "DeskBox 插件（React + Vite）：笔记 / 待办 / 密码。源码在此，构建产物输出到 ../../plugins/deskbox。",
+  "description": "DeskBox 插件（React + Vite）：笔记 / 待办 / 密码。源码在此，构建产物输出到 ../../deskbox。",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

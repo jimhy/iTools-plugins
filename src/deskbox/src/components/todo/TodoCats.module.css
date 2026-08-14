@@ -9,16 +9,20 @@
 }
 
 .item {
+  width: 100%;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: var(--r-md);
   cursor: pointer;
   border: 1px solid transparent;
+  background: transparent;
   color: var(--sub);
   font-size: 13.5px;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  text-align: left;
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
 }
 
 .item:hover {
@@ -51,4 +55,8 @@
 
 .active .count {
   color: var(--accent);
+}
+
+.item:active {
+  background: var(--panel-2);
 }

@@ -10,6 +10,8 @@ const svg = (size: number, children: JSX.Element) => (
 );
 
 // ---- 树 / 卡片 ----
+export const IconPlus = ({ size = 14 }: P) => svg(size, <path d="M8 2.5v11M2.5 8h11" />);
+
 export const IconFile = ({ size = 13 }: P) =>
   svg(size, <><path d="M3.5 1.5h6l3 3v10h-9z" /><path d="M9.5 1.5v3h3" /></>);
 

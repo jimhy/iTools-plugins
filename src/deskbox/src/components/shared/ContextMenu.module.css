@@ -17,9 +17,11 @@
   background: transparent;
   color: var(--text);
   padding: 8px 12px;
+  min-height: 36px;
   font-size: 13px;
   border-radius: var(--r-sm);
   cursor: pointer;
+  transition: color var(--motion-fast), background var(--motion-fast);
 }
 
 .item:hover {
@@ -32,4 +34,9 @@
 
 .danger:hover {
   background: rgba(255, 107, 107, 0.12);
+}
+
+.item:focus-visible {
+  outline-offset: -2px;
+  background: var(--hover);
 }
